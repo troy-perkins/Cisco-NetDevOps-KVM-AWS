@@ -34,9 +34,30 @@ module "vpc" {
 	}
 }
 
+data "aws_ami" "csr1000v" {
+	executable_users	= ["self"]
+	most_recent		= true
+	owners			= ["cisco"]
+
+	filter {
+		name		= "name"
+		values		= ["cisco-csr1000v-byol"]
+	}
+
+	filter {
+		name		= "architecture"
+		values		= ["x86_64"]
+	}
+}
+
 resource "aws_instance" "csr1000v" {
 	ami			= data.aws_ami.csr1000v.id
 	instance		= "t2.medium"
+	availability_zone	= "us-east-1a"
+
+	tags = {
+		Name		= "test_csr1000v"
+	}
 }
 
 resource "libvirt_volume" "base_image" {
