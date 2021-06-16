@@ -1,5 +1,5 @@
 /*
-This Terraform file includes providers for the dmacvicar/libvirt
+This Terraform file includes providers for the dmacvicar libvirt
 and AWS providers. 
 */
 provider "libvirt" {
@@ -19,6 +19,7 @@ locals {
 		"LABUSEVSCSR001"  	= { disk = "LABUSEVSCSR001.qcow2", mac = "52:54:00:00:00:14"},
 		"LABUSEVSCSR002"  	= { disk = "LABUSEVSCSR002.qcow2", mac = "52:54:00:00:00:15"}
 	}
+	
 	region				= "us-east-1"
 }
 
@@ -27,6 +28,9 @@ This section includes resources for the AWS provider.  The module section
 involves creating all relevant resources for the VPC (including subnets),
 the rest of the sections involve resources for creating the actual CSR1000v
 EC2 AMI instances.
+
+Please see Cisco CSR 1000v Series Cloud Router Deployment Guide for Amazon
+Web Service configuration guide for deployment specifics.
 /*
 module "vpc" {
 	source				= "terraform-aws-modules/vpc/aws"
@@ -41,6 +45,8 @@ module "vpc" {
 
 	enable_nat_gateway		= false
 	enable_vpn_gateway		= false
+
+	user_data 
 
 	tags = {
 		Terrform		= "true"
@@ -69,9 +75,56 @@ resource "aws_instance" "csr1000v" {
 	instance		= "t2.medium"
 	availability_zone	= "us-east-1a"
 
+	security_groups		= [aws_security_groups.sg_allow_ssh.id]
+	key_name		= aws_key_pair.demo_user.id
+
 	tags = {
-		Name		= "test_csr1000v"
+		Name		= "ec2_csr1000v"
 	}
+}
+
+resource "aws_volume_attachment" "csr_ebs_att" {
+	volume_id		= aws_ebs_volume.csr_ebs.id
+	instance_id		= aws_insance.csr1000v.id
+}
+
+resource "aws_ebs_volume" "csr_ebs" {
+	availability_zone	= "us-east-1a"
+	size			= 8
+	encrypted		= false
+}
+
+resource "aws_security_group" "sg_allow_ssh" {
+	name			= "sg_allow_ssh"
+	description		= "Allows incoming SSH sessions"
+	
+	ingress {
+		description	= "SSH from VPC"
+		from_port	= 22
+		to_port		= 22
+		protocol	= "tcp"
+		cidr_blocks	= [aws_vpc.main.cidr]
+	}
+	egress {
+		from_port	= 0
+		to_port		= 0
+		protocol	= "-1"
+		cidr_blocks	= ["0.0.0.0/0"]
+	}
+}
+
+resource "aws_eip_association" "csr_eip_assoc" {
+	instance_id		= aws_instance.csr1000v.id
+	allocation_id		= aws_eip.csr_eip.id
+}
+
+resource "aws_eip" "csr_eip" {
+	vpc			= true
+}
+
+resource "aws_key_pair" "demo_user" {
+	key_name		= "demo_user_key"
+	public_key		= "ssh-rsa xxxxxxxxx"
 }
 
 /*
