@@ -23,15 +23,6 @@ locals {
 	region				= "us-east-1"
 }
 
-/*
-This section includes resources for the AWS provider.  The module section 
-involves creating all relevant resources for the VPC (including subnets),
-the rest of the sections involve resources for creating the actual CSR1000v
-EC2 AMI instances.
-
-Please see Cisco CSR 1000v Series Cloud Router Deployment Guide for Amazon
-Web Service configuration guide for deployment specifics.
-/*
 module "vpc" {
 	source				= "terraform-aws-modules/vpc/aws"
 	version				= "3.1.0"
@@ -46,85 +37,45 @@ module "vpc" {
 	enable_nat_gateway		= false
 	enable_vpn_gateway		= false
 
-	user_data 
-
 	tags = {
 		Terrform		= "true"
 		Environment		= "dev"
 	}
 }
 
-data "aws_ami" "csr1000v" {
-	executable_users	= ["self"]
-	most_recent		= true
-	owners			= ["cisco"]
-
-	filter {
-		name		= "name"
-		values		= ["cisco-csr1000v-byol"]
-	}
-
-	filter {
-		name		= "architecture"
-		values		= ["x86_64"]
-	}
-}
-
 resource "aws_instance" "csr1000v" {
-	ami			= data.aws_ami.csr1000v.id
-	instance		= "t2.medium"
-	availability_zone	= "us-east-1a"
+        ami                     = "ami-0b9ccf33549b340cf"
+        instance_type           = "t2.medium"
+        availability_zone       = "us-east-1a"
 
-	security_groups		= [aws_security_groups.sg_allow_ssh.id]
-	key_name		= aws_key_pair.demo_user.id
+        security_groups         = [aws_security_group.sg_allow_ssh.id]
+        #key_name                = aws_key_pair.demo_user.id
 
-	tags = {
-		Name		= "ec2_csr1000v"
-	}
-}
-
-resource "aws_volume_attachment" "csr_ebs_att" {
-	volume_id		= aws_ebs_volume.csr_ebs.id
-	instance_id		= aws_insance.csr1000v.id
-}
-
-resource "aws_ebs_volume" "csr_ebs" {
-	availability_zone	= "us-east-1a"
-	size			= 8
-	encrypted		= false
+        tags = {
+                Name            = "ec2_csr1000v"
+        }
 }
 
 resource "aws_security_group" "sg_allow_ssh" {
-	name			= "sg_allow_ssh"
-	description		= "Allows incoming SSH sessions"
-	
-	ingress {
-		description	= "SSH from VPC"
-		from_port	= 22
-		to_port		= 22
-		protocol	= "tcp"
-		cidr_blocks	= [aws_vpc.main.cidr]
-	}
-	egress {
-		from_port	= 0
-		to_port		= 0
-		protocol	= "-1"
-		cidr_blocks	= ["0.0.0.0/0"]
-	}
+        name                    = "sg_allow_ssh"
+        description             = "Allows incoming SSH sessions"
+
+        ingress {
+                description     = "SSH from VPC"
+                from_port       = 22
+                to_port         = 22
+                protocol        = "tcp"
+        }
+        egress {
+                from_port       = 0
+                to_port         = 0
+                protocol        = "-1"
+                cidr_blocks     = ["0.0.0.0/0"]
+        }
 }
 
-resource "aws_eip_association" "csr_eip_assoc" {
-	instance_id		= aws_instance.csr1000v.id
-	allocation_id		= aws_eip.csr_eip.id
-}
-
-resource "aws_eip" "csr_eip" {
-	vpc			= true
-}
-
-resource "aws_key_pair" "demo_user" {
-	key_name		= "demo_user_key"
-	public_key		= "ssh-rsa xxxxxxxxx"
+output "instance_public_ip" {
+	value = aws_instance.csr1000v.public_ip
 }
 
 /*
