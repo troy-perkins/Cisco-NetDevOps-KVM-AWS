@@ -34,6 +34,10 @@ module "vpc" {
 	}
 }
 
+resource "aws_instance" "csr1000v" {
+	ami			= data.aws_ami.csr1000v.id
+	instance		= "t2.medium"
+}
 
 resource "libvirt_volume" "base_image" {
 	for_each		= local.routers
