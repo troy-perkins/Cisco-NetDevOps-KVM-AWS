@@ -48,12 +48,39 @@ resource "aws_instance" "csr1000v" {
         instance_type           = "t2.medium"
         availability_zone       = "us-east-1a"
 
-        security_groups         = [aws_security_group.sg_allow_ssh.id]
-        #key_name                = aws_key_pair.demo_user.id
+     	vpc_security_group_ids	= [aws_security_group.sg_allow_ssh.id] 
+        key_name                = "demo_user_key"
+
+	user_data = <<-EOF
+			hostname		= "aws_csr"
+			license			= "ipbase"
+			ios-config-100		= "aaa new-model"
+			ios-config-110		= "aaa authentication login default local"
+			ios-config-120		= "ip domain name packetsandflows.local"
+			ios-config-130		= "crypto key generate rsa general-keys modulus 4096"
+			ios-config-140		= "ip ssh version 2"
+			ios-config-150		= "ip ssh time-out 120"
+			ios-config-160		= "username cisco123 privilege 15 secret cisco123"
+			ios-config-170		= "enable secret cisco123"
+		EOF
 
         tags = {
                 Name            = "ec2_csr1000v"
         }
+	
+	provisioner "remote-exec" {
+		connection {
+			host			= aws_instance.csr1000v.public_ip
+			type			= "ssh"
+			user			= "cisco123"
+			password		= "cisco123"
+			private_key		= file("demo_user_key.pem")
+		}
+	}
+	
+	provisioner "local-exec" {
+		command = "ansible-playbook gre_tunnels.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip}, onprem_public=24.12.215.156'"
+	}
 }
 
 resource "aws_security_group" "sg_allow_ssh" {
@@ -61,10 +88,10 @@ resource "aws_security_group" "sg_allow_ssh" {
         description             = "Allows incoming SSH sessions"
 
         ingress {
-                description     = "SSH from VPC"
                 from_port       = 22
                 to_port         = 22
                 protocol        = "tcp"
+		cidr_blocks	= ["0.0.0.0/0"]
         }
         egress {
                 from_port       = 0
