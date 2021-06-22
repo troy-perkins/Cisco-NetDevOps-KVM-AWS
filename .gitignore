@@ -35,3 +35,6 @@ terraform.rc
 
 # Exclude any Cisco CSR1000v qcow2 files in directory
 *.qcow2
+
+# Exclude any .pem files
+*.pem

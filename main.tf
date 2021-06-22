@@ -16,11 +16,14 @@ and AWS resources for this Terraform file.
 */
 locals {
 	routers = {
-		"LABUSEVSCSR001"  	= { disk = "LABUSEVSCSR001.qcow2", mac = "52:54:00:00:00:14"},
-		"LABUSEVSCSR002"  	= { disk = "LABUSEVSCSR002.qcow2", mac = "52:54:00:00:00:15"}
+		"LABUSEVSCSR001"  	= { disk = "LABUSEVSCSR001.qcow2", mac = "52:54:00:00:00:14"}
 	}
 	
 	region				= "us-east-1"
+}
+
+data "external" "public_ip" {
+	program 			= ["python", "${path.module}/my_public_ip.py"]
 }
 
 module "vpc" {
@@ -67,20 +70,6 @@ resource "aws_instance" "csr1000v" {
         tags = {
                 Name            = "ec2_csr1000v"
         }
-	
-	provisioner "remote-exec" {
-		connection {
-			host			= aws_instance.csr1000v.public_ip
-			type			= "ssh"
-			user			= "cisco123"
-			password		= "cisco123"
-			private_key		= file("demo_user_key.pem")
-		}
-	}
-	
-	provisioner "local-exec" {
-		command = "ansible-playbook gre_tunnels.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip}, onprem_public=24.12.215.156'"
-	}
 }
 
 resource "aws_security_group" "sg_allow_ssh" {
@@ -162,5 +151,21 @@ resource "libvirt_domain" "router" {
         # Interface GigabitEthernet4
 	network_interface {
                 bridge		= "br0.1722"
+        }
+
+	provisioner "remote-exec" {
+                connection {
+                        host                    = "10.207.65.14"
+                        type                    = "ssh"
+                        user                    = "cisco123"
+                        password                = "cisco123"
+                }
+        }
+
+        #provisioner "local-exec" {
+        #        command = "ansible-playbook aws_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
+        #}
+	provisioner "local-exec" {
+                command = "ansible-playbook kvm_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
         }
 }

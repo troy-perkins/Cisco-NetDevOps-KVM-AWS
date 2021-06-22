@@ -1,4 +1,0 @@
----
-
-- name: Cisco IOS GRE Tunnels
-  hosts: 
