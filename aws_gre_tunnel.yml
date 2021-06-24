@@ -1,7 +1,7 @@
 ---
 
 - name: Cisco IOS GRE Tunnels on AWS Routers
-  hosts: kvm_router_internal
+  hosts: aws_routers
   gather_facts: false
   connection: network_cli
 
@@ -16,16 +16,6 @@
         ansible_ssh_private_key_file: ~/projects/Cisco-NetDevOps-KVM-AWS/demo_user_key.pem
         ansible_ssh_host: "{{ aws_public }}"
     
-    - name: Create in-memory KVM Ansible inventory
-      add_host:
-        name: kvm_router
-        groups: kvm_routers
-        ansible_network_os: ios
-        ansible_ssh_connection: ssh
-        ansible_ssh_user: cisco123
-        ansible_ssh_pass: cisco123
-        ansible_ssh_host: "{{ kvm_public }}"
-
     - name: Configure Static Route on AWS Router
       ios_config:
         lines:

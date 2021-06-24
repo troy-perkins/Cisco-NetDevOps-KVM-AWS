@@ -162,9 +162,9 @@ resource "libvirt_domain" "router" {
                 }
         }
 
-        #provisioner "local-exec" {
-        #        command = "ansible-playbook aws_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
-        #}
+        provisioner "local-exec" {
+                command = "ansible-playbook aws_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
+        }
 	provisioner "local-exec" {
                 command = "ansible-playbook kvm_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
         }
