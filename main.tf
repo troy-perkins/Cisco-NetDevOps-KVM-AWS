@@ -65,6 +65,9 @@ resource "aws_instance" "csr1000v" {
 			ios-config-150		= "ip ssh time-out 120"
 			ios-config-160		= "username cisco123 privilege 15 secret cisco123"
 			ios-config-170		= "enable secret cisco123"
+			ios-config-180		= "hostname aws_router"
+			ios-config-190		= "line vty 0 530"
+			ios-config-210		= "privilege level 15"
 		EOF
 
         tags = {
@@ -162,10 +165,11 @@ resource "libvirt_domain" "router" {
                 }
         }
 
-        provisioner "local-exec" {
-                command = "ansible-playbook aws_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
-        }
 	provisioner "local-exec" {
                 command = "ansible-playbook kvm_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
+        }
+
+	provisioner "local-exec" {
+                command = "ansible-playbook aws_gre_tunnel.yml --extra-vars 'aws_public=${aws_instance.csr1000v.public_ip} kvm_public=${data.external.public_ip.result["ip"]}'"
         }
 }
