@@ -19,12 +19,20 @@
     - name: Configure Static Route on KVM Router
       ios_config:
         lines:
-         - ip route 1.1.1.1 255.255.255.255 10.0.0.1
+         - ip route 2.2.2.2 255.255.255.255 10.0.0.2
+
+    - name: Configure Loopback1 Interface
+      ios_config:
+        lines:
+         - ip address 1.1.1.1 255.255.255.255
+        parents: interface Loopback 1
 
     - name: Configure KVM Router GRE tunnel
       ios_config:
         lines:
-         - ip address 10.0.0.2 255.255.255.0
+         - ip address 10.0.0.1 255.255.255.0
+         - ip mtu 1400
+         - ip tcp adjust-mss 1360
          - tunnel source GigabitEthernet1
          - tunnel destination {{ aws_public }}
         parents: interface Tunnel 0

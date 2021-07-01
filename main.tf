@@ -51,7 +51,7 @@ resource "aws_instance" "csr1000v" {
         instance_type           = "t2.medium"
         availability_zone       = "us-east-1a"
 
-     	vpc_security_group_ids	= [aws_security_group.sg_allow_ssh.id] 
+     	vpc_security_group_ids	= [aws_security_group.sg_allow_ssh.id, aws_security_group.sg_allow_gre.id] 
         key_name                = "demo_user_key"
 
 	user_data = <<-EOF
@@ -91,6 +91,25 @@ resource "aws_security_group" "sg_allow_ssh" {
                 protocol        = "-1"
                 cidr_blocks     = ["0.0.0.0/0"]
         }
+}
+
+resource "aws_security_group" "sg_allow_gre" {
+	name			= "sg_allow_gre"
+	description		= "Allows incoming GRE tunnel termination"
+
+	ingress {
+		from_port	= 0
+		to_port		= 0
+		protocol	= "47"
+		cidr_blocks	= ["0.0.0.0/0"]
+	}
+
+	egress {
+                from_port       = 0
+                to_port         = 0
+                protocol        = "-1"
+                cidr_blocks     = ["0.0.0.0/0"]
+	}
 }
 
 output "instance_public_ip" {
