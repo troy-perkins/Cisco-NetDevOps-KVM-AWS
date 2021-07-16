@@ -3,11 +3,12 @@ This Terraform file includes providers for the dmacvicar libvirt
 and AWS providers. 
 */
 provider "libvirt" {
-        uri     = "qemu+ssh://troyperkins@10.207.64.5/system"
+        uri     			= "qemu+ssh://troyperkins@10.207.64.5/system"
 }
 
 provider "aws" {
-	region	= "us-east-1"
+	region				= "us-east-1"
+	shared_credentials_file		= "$HOME/.aws/credentials"
 }
 
 /*
